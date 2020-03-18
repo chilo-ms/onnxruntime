@@ -88,9 +88,8 @@ Status LayerNorm<T>::Compute(OpKernelContext* p_ctx) const {
     inv_std_var_data = static_cast<T*>(inv_std_var_data_buf_ptr.get());
   }
 
-  concurrency::ThreadPool::TryBatchParallelFor(p_ctx->GetOperatorThreadPool(),
-                                               static_cast<int32_t>(norm_count),
-                                               [&](int32_t task_idx) {
+  concurrency::ThreadPool::TryBatchParallelFor(p_ctx->GetOperatorThreadPool(), static_cast<int32_t>(norm_count),
+                                               [&](ptrdiff_t task_idx) {
                                                  const T* p_input = X_data + task_idx * norm_size;
                                                  T* p_output = Y_data + task_idx * norm_size;
 

@@ -49,10 +49,16 @@ Status Environment::Initialize(std::unique_ptr<logging::LoggingManager> logging_
   // create thread pools
   if (create_global_thread_pools) {
     create_global_thread_pools_ = true;
-    intra_op_thread_pool_ = concurrency::CreateThreadPool("env_global_intra_op_thread_pool",
-                                                          tp_options->intra_op_num_threads);
-    inter_op_thread_pool_ = concurrency::CreateThreadPool("env_global_inter_op_thread_pool",
-                                                          tp_options->inter_op_num_threads);
+    ThreadPoolParams to = tp_options->intra_op_thread_pool_params;
+    if (to.name == nullptr) {
+      to.name = ORT_TSTR("intra-op");
+    }
+    intra_op_thread_pool_ = concurrency::CreateThreadPool(&Env::Default(), to, nullptr);
+    to = tp_options->inter_op_thread_pool_params;
+    if (to.name == nullptr) {
+      to.name = ORT_TSTR("inter-op");
+    }
+    inter_op_thread_pool_ = concurrency::CreateThreadPool(&Env::Default(), to, nullptr);
   }
 
   try {
