@@ -119,7 +119,7 @@ Status SkipLayerNorm<T>::Compute(OpKernelContext* p_ctx) const {
                                                  for (int64_t h = 0; h < hidden_size; h++) {
                                                    p_output[h] = (p_output[h] - mean) / mean_square * gamma_data[h] + beta_data[h];
                                                  }
-                                               });
+                                               }, 0);
 
   return Status::OK();
 }  // namespace contrib

@@ -131,7 +131,7 @@ void ThreadPool::Schedule(std::function<void()> fn) {
   underlying_threadpool_->Schedule(std::move(fn));
 }
 
-int ThreadPool::NumShardsUsedByFixedBlockSizeScheduling(const int64_t total, const int64_t block_size) {
+int ThreadPool::NumShardsUsedByFixedBlockSizeScheduling(const std::ptrdiff_t total, const std::ptrdiff_t block_size) {
   if (block_size <= 0 || total <= 1 || total <= block_size || NumThreads() == 1) {
     return 1;
   }
@@ -140,7 +140,7 @@ int ThreadPool::NumShardsUsedByFixedBlockSizeScheduling(const int64_t total, con
 }
 
 void ThreadPool::ParallelFor(std::ptrdiff_t total, const SchedulingParams& scheduling_params,
-                   const std::function<void(std::ptrdiff_t, std::ptrdiff_t)>& fn) {
+                             const std::function<void(std::ptrdiff_t, std::ptrdiff_t)>& fn) {
   switch (scheduling_params.strategy()) {
     case SchedulingStrategy::kAdaptive: {
       if (scheduling_params.cost_per_unit().has_value()) {
@@ -157,11 +157,10 @@ void ThreadPool::ParallelFor(std::ptrdiff_t total, const SchedulingParams& sched
   }
 }
 
-
 // This functionality is similar to parallelFor, except that reasoning about
 // the number of shards used is significantly easier.
-void ThreadPool::ParallelForFixedBlockSizeScheduling(const int64_t total, const int64_t block_size,
-                                                     const std::function<void(ptrdiff_t, ptrdiff_t)>& fn) {
+void ThreadPool::ParallelForFixedBlockSizeScheduling(const std::ptrdiff_t total, const std::ptrdiff_t block_size,
+                                                     const std::function<void(std::ptrdiff_t, std::ptrdiff_t)>& fn) {
   const int num_shards_used = NumShardsUsedByFixedBlockSizeScheduling(total, block_size);
   if (num_shards_used == 1) {
     fn(0, total);
@@ -170,11 +169,11 @@ void ThreadPool::ParallelForFixedBlockSizeScheduling(const int64_t total, const 
 
   // Adapted from Eigen's parallelFor implementation.
   BlockingCounter counter(num_shards_used);
-  std::function<void(ptrdiff_t, ptrdiff_t)> handle_range = [=, &handle_range, &counter, &fn](int64_t first,
-                                                                                             int64_t last) {
+  std::function<void(ptrdiff_t, ptrdiff_t)> handle_range = [=, &handle_range, &counter, &fn](std::ptrdiff_t first,
+                                                                                             std::ptrdiff_t last) {
     while (last - first > block_size) {
       // Find something near the midpoint which is a multiple of block size.
-      const int64_t mid = first + ((last - first) / 2 + block_size - 1) / block_size * block_size;
+      const std::ptrdiff_t mid = first + ((last - first) / 2 + block_size - 1) / block_size * block_size;
       Schedule([=, &handle_range]() { handle_range(mid, last); });
       last = mid;
     }
@@ -212,7 +211,7 @@ void ThreadPool::ParallelForWithWorkerId(std::ptrdiff_t total, int64_t cost_per_
   ORT_ENFORCE(total == (int64_t)(std::ptrdiff_t)total);
 
   threadpool_device_->parallelFor(total, Eigen::TensorOpCost(0, 0, static_cast<double>(cost_per_unit)),
-                                  [this, &fn](int64_t start, int64_t limit) {
+                                  [this, &fn](std::ptrdiff_t start, std::ptrdiff_t limit) {
                                     // ParallelFor may use the current thread to
                                     // do some work synchronously. When calling
                                     // CurrentThreadId() from outside of the
@@ -225,7 +224,7 @@ void ThreadPool::ParallelForWithWorkerId(std::ptrdiff_t total, int64_t cost_per_
 
 void ThreadPool::ParallelForWithWorkerId(std::ptrdiff_t total, const SchedulingParams& scheduling_params,
                                          const std::function<void(std::ptrdiff_t, std::ptrdiff_t, int)>& fn) {
-  ParallelFor(total, scheduling_params, [this, &fn](int64_t start, int64_t limit) {
+  ParallelFor(total, scheduling_params, [this, &fn](std::ptrdiff_t start, std::ptrdiff_t limit) {
     // We may use the current thread to do some work synchronously.
     // When calling CurrentThreadId() from outside of the thread
     // pool, we get -1, so we can shift every id up by 1.

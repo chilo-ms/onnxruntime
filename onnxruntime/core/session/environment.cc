@@ -32,7 +32,7 @@ std::once_flag schemaRegistrationOnceFlag;
 
 Status Environment::Create(std::unique_ptr<logging::LoggingManager> logging_manager,
                            std::unique_ptr<Environment>& environment,
-                           const ThreadingOptions* tp_options,
+                           const OrtThreadingOptions* tp_options,
                            bool create_global_thread_pools) {
   environment = std::unique_ptr<Environment>(new Environment());
   auto status = environment->Initialize(std::move(logging_manager), tp_options, create_global_thread_pools);
@@ -40,7 +40,7 @@ Status Environment::Create(std::unique_ptr<logging::LoggingManager> logging_mana
 }
 
 Status Environment::Initialize(std::unique_ptr<logging::LoggingManager> logging_manager,
-                               const ThreadingOptions* tp_options,
+                               const OrtThreadingOptions* tp_options,
                                bool create_global_thread_pools) {
   auto status = Status::OK();
 
@@ -49,7 +49,7 @@ Status Environment::Initialize(std::unique_ptr<logging::LoggingManager> logging_
   // create thread pools
   if (create_global_thread_pools) {
     create_global_thread_pools_ = true;
-    ThreadPoolParams to = tp_options->intra_op_thread_pool_params;
+    OrtThreadPoolParams to = tp_options->intra_op_thread_pool_params;
     if (to.name == nullptr) {
       to.name = ORT_TSTR("intra-op");
     }

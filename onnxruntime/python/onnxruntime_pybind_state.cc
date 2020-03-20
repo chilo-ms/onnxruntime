@@ -586,11 +586,11 @@ Applies to session load, initialization, etc. Default is 0.)pbdoc")
               options->intra_op_param.thread_pool_size = value;
           },R"pbdoc(Sets the number of threads used to parallelize the execution within nodes. Default is 0 to let onnxruntime choose.)pbdoc")
       .def_property( 
-          "inter_op_param", [](const SessionOptions* options) -> int {
+          "inter_op_num_threads", [](const SessionOptions* options) -> int {
               return options->inter_op_param.thread_pool_size;
           }, [](SessionOptions* options, int value) -> void {
               options->inter_op_param.thread_pool_size = value;
-          },R"pbdoc(Sets the number of threads used to parallelize the execution within nodes. Default is 0 to let onnxruntime choose.)pbdoc")     
+          },R"pbdoc(Sets the number of threads used to parallelize the execution of the graph (across nodes). Default is 0 to let onnxruntime choose.)pbdoc")     
       .def_readwrite("execution_mode", &SessionOptions::execution_mode,
                      R"pbdoc(Sets the execution mode. Default is sequential.)pbdoc")
       .def_property(

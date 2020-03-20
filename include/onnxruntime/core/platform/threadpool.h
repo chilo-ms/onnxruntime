@@ -81,7 +81,7 @@ class ThreadPool {
   class SchedulingParams {
    public:
     explicit SchedulingParams(SchedulingStrategy strategy, optional<int64_t> cost_per_unit,
-                              optional<int64_t> block_size)
+                              optional<std::ptrdiff_t> block_size)
         : strategy_(strategy), cost_per_unit_(cost_per_unit), block_size_(block_size) {
     }
 
@@ -91,7 +91,7 @@ class ThreadPool {
     optional<int64_t> cost_per_unit() const {
       return cost_per_unit_;
     }
-    optional<int64_t> block_size() const {
+    optional<std::ptrdiff_t> block_size() const {
       return block_size_;
     }
 
@@ -107,7 +107,7 @@ class ThreadPool {
 
     // The block size of each shard. Only applicable for Fixed Block Size
     // scheduling strategy.
-    optional<int64_t> block_size_;
+    optional<std::ptrdiff_t> block_size_;
   };
 #ifdef _WIN32
   using NAME_CHAR_TYPE = wchar_t;
@@ -124,7 +124,7 @@ class ThreadPool {
   //
   // REQUIRES: num_threads > 0
   ThreadPool(Env* env, const ThreadOptions& thread_options, const NAME_CHAR_TYPE* name, int num_threads,
-             bool low_latency_hint, Eigen::Allocator* allocator = nullptr);  
+             bool low_latency_hint, Eigen::Allocator* allocator = nullptr);
   // Constructs a pool that wraps around the thread::ThreadPoolInterface
   // instance provided by the caller. Caller retains ownership of
   // `user_threadpool` and must ensure its lifetime is longer than the
@@ -144,7 +144,7 @@ class ThreadPool {
 
   // Returns the number of shards used by ParallelForFixedBlockSizeScheduling
   // with these parameters.
-  int NumShardsUsedByFixedBlockSizeScheduling(int64_t total, int64_t block_size);
+  int NumShardsUsedByFixedBlockSizeScheduling(std::ptrdiff_t total, std::ptrdiff_t block_size);
 
   // ParallelFor shards the "total" units of work assuming each unit of work
   // having roughly "cost_per_unit" cost, in cycles. Each unit of work is
@@ -160,22 +160,22 @@ class ThreadPool {
   void ParallelFor(std::ptrdiff_t total, double cost_per_unit,
                    const std::function<void(std::ptrdiff_t first, std::ptrdiff_t last)>& fn);
   static void TryParallelFor(concurrency::ThreadPool* tp, std::ptrdiff_t total, double cost_per_unit,
-                   const std::function<void(std::ptrdiff_t first, std::ptrdiff_t last)>& fn){
-      if(tp == nullptr){
-        fn(0, total);
-        return;
-      }
-      tp->ParallelFor(total, cost_per_unit, fn);
+                             const std::function<void(std::ptrdiff_t first, std::ptrdiff_t last)>& fn) {
+    if (tp == nullptr) {
+      fn(0, total);
+      return;
+    }
+    tp->ParallelFor(total, cost_per_unit, fn);
   }
   void ParallelFor(std::ptrdiff_t total, const TensorOpCost& cost_per_unit,
                    const std::function<void(std::ptrdiff_t first, std::ptrdiff_t)>& fn);
   static void TryParallelFor(concurrency::ThreadPool* tp, std::ptrdiff_t total, const TensorOpCost& cost_per_unit,
-                   const std::function<void(std::ptrdiff_t first, std::ptrdiff_t last)>& fn){
-      if(tp == nullptr){
-        fn(0, total);
-        return;
-      }
-      tp->ParallelFor(total, cost_per_unit, fn);
+                             const std::function<void(std::ptrdiff_t first, std::ptrdiff_t last)>& fn) {
+    if (tp == nullptr) {
+      fn(0, total);
+      return;
+    }
+    tp->ParallelFor(total, cost_per_unit, fn);
   }
   // Similar to ParallelFor above, but takes the specified scheduling strategy
   // into account.
@@ -202,6 +202,7 @@ class ThreadPool {
 
   // Similar to ParallelForWithWorkerId above, but takes the specified
   // scheduling strategy into account.
+  // `fn` takes 3 parameters: start, limit, id. Id starts from 1.
   void ParallelForWithWorkerId(std::ptrdiff_t total, const SchedulingParams& scheduling_params,
                                const std::function<void(std::ptrdiff_t, std::ptrdiff_t, int)>& fn);
 
@@ -221,9 +222,9 @@ class ThreadPool {
   // cutting them by halves
   void SimpleParallelFor(std::ptrdiff_t total, std::function<void(std::ptrdiff_t)> fn);
 
-#ifdef USE_OPENMP 
+#ifdef USE_OPENMP
   template <typename F>
-  inline static void TryBatchParallelFor(concurrency::ThreadPool*, std::ptrdiff_t total, F&& fn, std::ptrdiff_t /*num_batches*/) {
+  inline static void TryBatchParallelFor(ThreadPool*, std::ptrdiff_t total, F&& fn, std::ptrdiff_t /*num_batches*/) {
 #pragma omp parallel for
     for (std::ptrdiff_t i = 0; i < total; ++i) {
       fn(i);
@@ -235,13 +236,14 @@ class ThreadPool {
    * Tries to call the given function in parallel, with calls split into (num_batches) batches.
    *\param num_batches If it is zero, it will be replaced to the value of NumThreads().
    *\param fn A std::function or STL style functor with signature of "void f(int32_t);"
-   * Pitfall: Caller should cap `num_batches` to a reasonable value based on the cost of `fn` and the value of `total`. For example, if fn is as simple as:
-   * int sum=0; fn = [&](int i){sum +=i;} and `total` is 100, then num_batches should be just 1.
+   * Pitfall: Caller should cap `num_batches` to a reasonable value based on the cost of `fn` and the value of `total`.
+   *For example, if fn is as simple as: int sum=0; fn = [&](int i){sum +=i;} and `total` is 100, then num_batches should
+   *be just 1.
    *
    * ```
    **/
   template <typename F>
-  inline static void TryBatchParallelFor(ThreadPool* tp, std::ptrdiff_t total, F&& fn, std::ptrdiff_t num_batches = 0) {
+  inline static void TryBatchParallelFor(ThreadPool* tp, std::ptrdiff_t total, F&& fn, std::ptrdiff_t num_batches) {
     if (tp != nullptr) {
       for (std::ptrdiff_t i = 0; i < total; ++i) {
         // In many cases, fn can be inlined here.
@@ -293,8 +295,8 @@ class ThreadPool {
   // When (i+1)*block_size > total, fn(i*block_size, total) is called instead.
   // Here, k = NumShardsUsedByFixedBlockSizeScheduling(total, block_size).
   // Requires 0 < block_size <= total.
-  void ParallelForFixedBlockSizeScheduling(int64_t total, int64_t block_size,
-                                           const std::function<void(ptrdiff_t, ptrdiff_t)>& fn);
+  void ParallelForFixedBlockSizeScheduling(std::ptrdiff_t total, std::ptrdiff_t block_size,
+                                           const std::function<void(std::ptrdiff_t, std::ptrdiff_t)>& fn);
   ThreadOptions thread_options_;
   // underlying_threadpool_ is the user_threadpool if user_threadpool is
   // provided in the constructor. Otherwise it is the eigen_threadpool_.
@@ -304,8 +306,8 @@ class ThreadPool {
   std::unique_ptr<ThreadPoolTempl<Env>> eigen_threadpool_;
   std::unique_ptr<Eigen::ThreadPoolDevice> threadpool_device_;
   // Copied from MlasPartitionWork
-  static void PartitionWork(std::ptrdiff_t ThreadId, std::ptrdiff_t ThreadCount, std::ptrdiff_t TotalWork, std::ptrdiff_t* WorkIndex,
-                            std::ptrdiff_t* WorkRemaining) {
+  static void PartitionWork(std::ptrdiff_t ThreadId, std::ptrdiff_t ThreadCount, std::ptrdiff_t TotalWork,
+                            std::ptrdiff_t* WorkIndex, std::ptrdiff_t* WorkRemaining) {
     const std::ptrdiff_t WorkPerThread = TotalWork / ThreadCount;
     const std::ptrdiff_t WorkPerThreadExtra = TotalWork % ThreadCount;
 

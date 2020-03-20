@@ -28,8 +28,8 @@ namespace onnxruntime {
 //parameter is thread pool size
 class MathGemmTest : public testing::TestWithParam<int> {
  protected:
-   static ThreadPoolParams CreateThreadPoolOptions(int size){
-       ThreadPoolParams option;
+   static OrtThreadPoolParams CreateThreadPoolOptions(int size){
+       OrtThreadPoolParams option;
        option.thread_pool_size = size;
        return option;
    }

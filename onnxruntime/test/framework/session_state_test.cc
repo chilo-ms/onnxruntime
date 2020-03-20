@@ -40,7 +40,7 @@ class TestOpKernel : public OpKernel {
 class SessionStateAddGetKernelTest : public testing::TestWithParam<int> {};
 
 TEST_P(SessionStateAddGetKernelTest, AddGetKernelTest) {
-  ThreadPoolParams to;
+  OrtThreadPoolParams to;
   to.thread_pool_size = GetParam();
   auto tp = concurrency::CreateThreadPool(&onnxruntime::Env::Default(), to);
   ONNX_OPERATOR_SCHEMA(Variable)
@@ -103,7 +103,7 @@ class SessionStateTestP : public testing::TestWithParam<TestParam> {};
 // Test that we separate out constant and non-constant initializers correctly
 TEST_P(SessionStateTestP, TestInitializerProcessing) {
   const TestParam& param = GetParam();
-  ThreadPoolParams to;
+  OrtThreadPoolParams to;
   to.thread_pool_size = to.thread_pool_size;
   auto tp = concurrency::CreateThreadPool(&onnxruntime::Env::Default(), to);
 

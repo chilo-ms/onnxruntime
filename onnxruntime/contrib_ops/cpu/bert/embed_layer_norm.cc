@@ -116,7 +116,7 @@ Status EmbedLayerNorm<T>::Compute(OpKernelContext* context) const {
       for (int i = 0; i < hidden_size; i++) {
         y[i] = y[i] / e * gamma_data[i] + beta_data[i];
       }
-    });
+    }, 0);
 
     if (failed.load(std::memory_order_acquire)) {
       return ORT_MAKE_STATUS(ONNXRUNTIME, INVALID_ARGUMENT, "input index out of range");

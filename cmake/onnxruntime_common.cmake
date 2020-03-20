@@ -90,7 +90,10 @@ endif()
 
 onnxruntime_add_include_to_target(onnxruntime_common date_interface safeint_interface wil)
 target_include_directories(onnxruntime_common PRIVATE ${CMAKE_CURRENT_BINARY_DIR} ${ONNXRUNTIME_ROOT}
-        ${eigen_INCLUDE_DIRS} PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/external/nsync/public")
+        ${eigen_INCLUDE_DIRS})
+if(NOT WIN32)
+  target_include_directories(onnxruntime_common PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/external/nsync/public")
+endif()
 
 if(NOT onnxruntime_USE_OPENMP)
   target_compile_definitions(onnxruntime_common PUBLIC EIGEN_USE_THREADS)

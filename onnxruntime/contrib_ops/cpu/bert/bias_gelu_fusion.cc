@@ -69,7 +69,7 @@ Status BiasGelu<T>::Compute(OpKernelContext* ctx) const {
                                                  for (int64_t h = 0; h < bias_len; h++) {
                                                    p_output[h] = p_output_tmp[h] * (p_output[h] + 1.0f);
                                                  }
-                                               });
+                                               }, 0);
 
   return Status::OK();
 }

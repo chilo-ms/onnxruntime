@@ -1873,7 +1873,7 @@ TEST(InferenceSessionTests, CheckIfGlobalThreadPoolsAreBeingUsed) {
       LoggingManager::InstanceType::Temporal);
 
   std::unique_ptr<Environment> env;
-  ThreadingOptions tp_options{0, 0};
+  OrtThreadingOptions tp_options;
   auto st = Environment::Create(std::move(logging_manager), env, &tp_options, true /*create_global_thread_pools*/);
   ASSERT_TRUE(st.IsOK());
 
@@ -1911,7 +1911,7 @@ TEST(InferenceSessionTests, CheckIfPerSessionThreadPoolsAreBeingUsed2) {
       LoggingManager::InstanceType::Temporal);
 
   std::unique_ptr<Environment> env;
-  ThreadingOptions tp_options{0, 0};
+  OrtThreadingOptions tp_options;
   auto st = Environment::Create(std::move(logging_manager), env, &tp_options, true /*create_global_thread_pools*/);
   ASSERT_TRUE(st.IsOK());
 

@@ -110,7 +110,7 @@ Status LayerNorm<T>::Compute(OpKernelContext* p_ctx) const {
 
                                                  mean_data[task_idx] = mean;
                                                  inv_std_var_data[task_idx] = 1 / mean_square;
-                                               });
+                                               }, 0);
 
   return Status::OK();
 }

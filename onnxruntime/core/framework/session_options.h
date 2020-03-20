@@ -7,6 +7,7 @@
 #include <vector>
 #include "core/session/onnxruntime_c_api.h"
 #include "core/optimizer/graph_transformer_level.h"
+#include "core/util/thread_utils.h"
 
 namespace onnxruntime {
 struct FreeDimensionOverride {
@@ -55,11 +56,11 @@ struct SessionOptions {
   TransformerLevel graph_optimization_level = TransformerLevel::Level3;
 
   // controls the size of the thread pool used to parallelize the execution of tasks within individual nodes (ops)
-  ThreadPoolParams intra_op_param;
+  OrtThreadPoolParams intra_op_param;
 
   // controls the size of the thread pool used to parallelize the execution of nodes (ops)
   // configuring this makes sense only when you're using parallel executor
-  ThreadPoolParams inter_op_param;
+  OrtThreadPoolParams inter_op_param;
 
   // For models with free input dimensions (most commonly batch size), specifies a set of values to override those
   // free dimensions with, keyed by dimension denotation.

@@ -169,7 +169,7 @@ void CropAndResizeForward(const TensorShape& output_shape,
         }
       }  // for pw
     }    // for ph
-  });    // for n
+  }, 0);    // for n
 }
 
 template <typename T>

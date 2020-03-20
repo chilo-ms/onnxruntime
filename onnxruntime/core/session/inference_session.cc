@@ -174,7 +174,7 @@ void InferenceSession::ConstructorCommon(const SessionOptions& session_options,
   if (use_per_session_threads_) {
     LOGS(*session_logger_, INFO) << "Creating and using per session threadpools since use_per_session_threads_ is true";
     {
-      ThreadPoolParams to = session_options_.intra_op_param;
+      OrtThreadPoolParams to = session_options_.intra_op_param;
       if (to.name == nullptr) {
         to.name = ORT_TSTR("intra-op");
       }
@@ -190,7 +190,7 @@ void InferenceSession::ConstructorCommon(const SessionOptions& session_options,
           concurrency::CreateThreadPool(&Env::Default(), to, nullptr);
     }
     if (session_options_.execution_mode == ExecutionMode::ORT_PARALLEL) {
-      ThreadPoolParams to = session_options_.inter_op_param;
+      OrtThreadPoolParams to = session_options_.inter_op_param;
       // If the thread pool can use all the processors, then
       // we set thread affinity.
       if (to.thread_pool_size == 0 && session_options_.execution_mode == ExecutionMode::ORT_SEQUENTIAL)

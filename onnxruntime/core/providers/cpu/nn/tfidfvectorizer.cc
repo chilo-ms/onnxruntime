@@ -433,7 +433,7 @@ Status TfIdfVectorizer::Compute(OpKernelContext* ctx) const {
     ComputeImpl(ctx, row_num, C, frequencies);
   };
 
-  concurrency::ThreadPool::TryBatchParallelFor(ctx->GetOperatorThreadPool(), num_rows, std::move(fn));
+  concurrency::ThreadPool::TryBatchParallelFor(ctx->GetOperatorThreadPool(), num_rows, std::move(fn), 0);
 
   OutputResult(ctx, B, frequencies);
 
