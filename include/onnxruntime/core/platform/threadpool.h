@@ -244,7 +244,7 @@ class ThreadPool {
    **/
   template <typename F>
   inline static void TryBatchParallelFor(ThreadPool* tp, std::ptrdiff_t total, F&& fn, std::ptrdiff_t num_batches) {
-    if (tp != nullptr) {
+    if (tp == nullptr) {
       for (std::ptrdiff_t i = 0; i < total; ++i) {
         // In many cases, fn can be inlined here.
         fn(i);
